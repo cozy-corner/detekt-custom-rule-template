@@ -18,11 +18,7 @@ class IgnoreExceptionRule(config: Config) : Rule(config) {
         // if empty catch block then default to report
         val catchBody = catchClause.catchBody ?: return
 
-        val hasIf = catchBody.anyDescendantOfType<KtIfExpression>()
-        val hasWhen = catchBody.anyDescendantOfType<KtWhenExpression>()
-
-        val lastStatement = catchBody.lastBlockStatementOrThis()
-        if ((hasIf || hasWhen) && lastStatement !is KtThrowExpression) {
+        if (hasBranches(catchBody) && isHandledBeforePassCatchBlock(catchBody).not()) {
             report(
                 CodeSmell(
                     issue,
@@ -31,5 +27,14 @@ class IgnoreExceptionRule(config: Config) : Rule(config) {
                 )
             )
         }
+    }
+
+    private fun hasBranches(catchBody: KtExpression): Boolean {
+        return catchBody.anyDescendantOfType<KtIfExpression>() || catchBody.anyDescendantOfType<KtWhenExpression>()
+    }
+
+    private fun isHandledBeforePassCatchBlock(catchBody: KtExpression): Boolean {
+        val lastStatement = catchBody.lastBlockStatementOrThis()
+        return lastStatement is KtThrowExpression || lastStatement is KtReturnExpression
     }
 }

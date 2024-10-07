@@ -50,6 +50,25 @@ internal class IgnoreExceptionRuleTest(private val env: KotlinCoreEnvironment) {
     }
 
     @Test
+    fun `should not report when return before pass catch block`() {
+        // language=kotlin
+        val code = """
+            fun test() {
+                try {
+                    throw Exception()
+                } catch (e: Exception) {
+                    when (e) {
+                        is NumberFormatException -> println("handle exception")
+                    }
+                    return
+                }
+            }
+        """
+        val findings = IgnoreExceptionRule(Config.empty).compileAndLintWithContext(env, code)
+        findings shouldHaveSize 0
+    }
+
+    @Test
     fun `should report ignored exceptions in catch block with if expression`() {
         // language=kotlin
         val code = """
